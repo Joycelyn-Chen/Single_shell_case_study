@@ -2,6 +2,21 @@ import os
 import csv
 from collections import defaultdict
 
+class track:
+    def __init__(self, initial_time, initial_id):
+        self.initial_time = initial_time
+        self.initial_id = initial_id
+        self.tracker = []
+
+
+class segment_obj:
+    def __init__(self, time_stamp, id, area, bbox):
+        self.time_stamp = time_stamp
+        self.id = id
+        self.area = area
+        self.bbox = bbox        #(bbox_x, bbox_y, bbox_w, bbox_h)
+        
+
 def calculate_iou(bbox1, bbox2):
     x1, y1, w1, h1 = bbox1
     x2, y2, w2, h2 = bbox2
@@ -37,11 +52,30 @@ def traverse_track(initial_id, target_track, initial_time_stamp = 200):
 
     return single_track
 
+def has_similar_size(prev_area, current_area):
+    if current_area > prev_area:
+        if float(prev_area)/float(current_area) > 0.8:
+            return True
+    else:
+        if float(current_area)/float(prev_area) > 0.8:
+            return True
+    return False
+
+def two_iou_overlapped(bbox_1, bbox_2, segment_bbox):
+    if ((calculate_iou(bbox_1, segment_bbox) > 0.7) and (calculate_iou(bbox_2, segment_bbox) > 0.5)):
+        return True
+    return False
+    
+
+
 
 root_directory = "/home/joy0921/Desktop/2023S/Dataset/outputs"
 
 # Create a dictionary to store the target track
-target_track = defaultdict(list)
+#target_track = defaultdict(list)
+target_track = []
+
+
 
 # Get all the CSV files in the root directory and its subdirectories
 csv_files = [os.path.join(root, file) for root, _, files in os.walk(root_directory) for file in files if file.endswith(".csv")]
@@ -80,33 +114,55 @@ for csv_file in sorted_csv_files:
         segment["time_stamp"] = time
 
     # Find the segment with the largest intersection of union with the previous time stamp
-    if not target_track:
+    if len(target_track) == 0:
         # If it's the first CSV file, record all segments
-        for segment in segments:
-            target_track[segment["time_stamp"]].append(segment)
+        for i, segment in enumerate(segments):
+            target_track.append(track(segment["time_stamp"], segment["id"]))
+            target_track[i].tracker.append(segment_obj(int(segment["time_stamp"]), int(segment["id"]), int(segment["area"]), [float(segment["bbox_x0"]), float(segment["bbox_y0"]),
+                                                                                                     float(segment["bbox_w"]), float(segment["bbox_h"])]))
+            # target_track[segment["time_stamp"]].append(segment)
     else:
-        previous_segments = target_track[list(target_track.keys())[-1]]
+        # previous_segments = target_track[list(target_track.keys())[-1]]
 
-        for segment in segments:
+        # for segment in segments:
+        #     max_iou = 0.0
+        #     best_match = None
+
+        #     for prev_segment in previous_segments:
+        #         iou = calculate_iou(
+        #             [float(prev_segment["bbox_x0"]), float(prev_segment["bbox_y0"]),
+        #              float(prev_segment["bbox_w"]), float(prev_segment["bbox_h"])],
+        #             [float(segment["bbox_x0"]), float(segment["bbox_y0"]),
+        #              float(segment["bbox_w"]), float(segment["bbox_h"])]
+        #         )
+
+        #         if iou > max_iou:
+        #             max_iou = iou
+        #             best_match = segment   #originally: best_match = prev_segment
+        #             best_match["prev_time"] = prev_segment["time_stamp"]
+        #             best_match["prev_id"] = prev_segment["id"]
+
+        #     if best_match is not None:
+        #         target_track[segment["time_stamp"]].append(best_match)
+
+        for target in target_track:
+            prev_segment = target.tracker[-1]       # output a segment (time, id, area, bbox) prev_segment.bbox
             max_iou = 0.0
             best_match = None
-
-            for prev_segment in previous_segments:
-                iou = calculate_iou(
-                    [float(prev_segment["bbox_x0"]), float(prev_segment["bbox_y0"]),
-                     float(prev_segment["bbox_w"]), float(prev_segment["bbox_h"])],
-                    [float(segment["bbox_x0"]), float(segment["bbox_y0"]),
-                     float(segment["bbox_w"]), float(segment["bbox_h"])]
-                )
-
+            for segment in segments:
+                segment_bbox = [float(segment["bbox_x0"]), float(segment["bbox_y0"]), float(segment["bbox_w"]), float(segment["bbox_h"])]
+                iou = calculate_iou(prev_segment.bbox, segment_bbox)
                 if iou > max_iou:
-                    max_iou = iou
-                    best_match = segment   #originally: best_match = prev_segment
-                    best_match["prev_time"] = prev_segment["time_stamp"]
-                    best_match["prev_id"] = prev_segment["id"]
+                    if len(target.tracker) > 2:
+                        # compare the two time stamp before, area and iou
+                        if not (has_similar_size(prev_segment.area, int(segment["area"])) and two_iou_overlapped(target.tracker[-1].bbox, target.tracker[-2].bbox, segment_bbox)):
+                            continue
 
+                    best_match = segment_obj(int(segment["time_stamp"]), int(segment["id"]), int(segment["area"]), [float(segment["bbox_x0"]), float(segment["bbox_y0"]),
+                                                                                                     float(segment["bbox_w"]), float(segment["bbox_h"])])
             if best_match is not None:
-                target_track[segment["time_stamp"]].append(best_match)
+                target.tracker.append(best_match)
+
 
 # # Print the target track
 # for time_stamp, segments in target_track.items():
@@ -114,8 +170,13 @@ for csv_file in sorted_csv_files:
 #     for segment in segments:
 #         print("Segment:", segment)
 
-single_track = traverse_track(initial_id = 7, initial_time_stamp = 210, target_track = target_track)
+# single_track = traverse_track(initial_id = 7, initial_time_stamp = 210, target_track = target_track)
 
-for track in single_track:
-    print(track)
+# for track in single_track:
+#     print(track)
 
+# DEBUG: check if the definitions are correct
+for target in target_track:
+    if target.initial_id == 7 and target.initial_time_stamp == 210:
+        print("\nYa did it!!!!\n\n")
+        print(target.tracker)
