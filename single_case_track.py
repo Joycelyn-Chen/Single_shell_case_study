@@ -6,7 +6,7 @@ class track:
     def __init__(self, initial_time, initial_id):
         self.initial_time = initial_time
         self.initial_id = initial_id
-        self.tracker = []
+        self.tracker = []       # list of segments: [segment1, segment2]
 
 
 class segment_obj:
@@ -73,7 +73,7 @@ root_directory = "/Users/joycelynchen/Desktop/UBC/Research/Program/Single_shell_
 
 # Create a dictionary to store the target track
 #target_track = defaultdict(list)
-target_track = []
+target_track = []           # list of tracks: [track1, track2]
 
 
 
