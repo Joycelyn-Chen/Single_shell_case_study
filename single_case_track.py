@@ -52,14 +52,14 @@ def traverse_track(initial_id, target_track, initial_time_stamp = 200):
 
     return single_track
 
-def has_similar_size(prev_area, current_area):
-    if current_area > prev_area:
-        if float(prev_area)/float(current_area) > 0.8:
-            return True
-    else:
-        if float(current_area)/float(prev_area) > 0.8:
-            return True
+def has_similar_size(area1, area2):
+    # Place the one with bigger area as the denominator
+    if area1 > area2:
+        area2, area1 = area1, area2
+    if float(area1) / float(area2) > 0.8:
+        return True
     return False
+    
 
 def two_iou_overlapped(bbox_1, bbox_2, segment_bbox):
     if ((calculate_iou(bbox_1, segment_bbox) > 0.7) and (calculate_iou(bbox_2, segment_bbox) > 0.5)):
@@ -69,7 +69,7 @@ def two_iou_overlapped(bbox_1, bbox_2, segment_bbox):
 
 
 
-root_directory = "/home/joy0921/Desktop/2023S/Dataset/outputs"
+root_directory = "/Users/joycelynchen/Desktop/UBC/Research/Program/Single_shell_case_study/outputs"
 
 # Create a dictionary to store the target track
 #target_track = defaultdict(list)
@@ -175,8 +175,13 @@ for csv_file in sorted_csv_files:
 # for track in single_track:
 #     print(track)
 
+
+
 # DEBUG: check if the definitions are correct
-for target in target_track:
-    if target.initial_id == 7 and target.initial_time_stamp == 210:
-        print("\nYa did it!!!!\n\n")
-        print(target.tracker)
+
+for i, target in enumerate(target_track):
+    # print(f"{i}:\ninit_time: {target.initial_time}\tinit_id: {target.initial_id}\t tracker len: {len(target.tracker)}")
+    if int(target.initial_id) == 7 and int(target.initial_time) == 200:
+        print("+---------Case study Result------------+")
+        for j, seg in enumerate(target.tracker):
+            print(f"[{j}]  Time stamp: {seg.time_stamp}\tId: {seg.id}\tArea: {seg.area}")

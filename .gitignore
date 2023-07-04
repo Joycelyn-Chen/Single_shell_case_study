@@ -160,7 +160,9 @@ cython_debug/
 #.idea/
 
 # images
-.jpg
-.png
-.jpeg
-.JPEG
+*.jpg
+*.png
+*.jpeg
+*.JPEG
+/case_masks/*.png
+s
