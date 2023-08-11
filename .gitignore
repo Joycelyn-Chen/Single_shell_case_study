@@ -165,4 +165,8 @@ cython_debug/
 *.jpeg
 *.JPEG
 /case_masks/*.png
+**/*.jpg
+**/*.png
+**/*.jpeg
+**/*.JPEG
 s
