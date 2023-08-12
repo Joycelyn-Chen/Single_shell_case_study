@@ -33,7 +33,6 @@ image_files = extract_files(img_folder)
 
 # read all the masks
 for file in mask_files:
-    
     red_mask = convert_binary_mask_to_red(file)
     for img in image_files:
         img_name = img.split("/")[-1].split(".")[-2]

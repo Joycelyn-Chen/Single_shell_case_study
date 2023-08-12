@@ -56,9 +56,15 @@ def has_similar_size(area1, area2):
     # Place the one with bigger area as the denominator
     if area1 > area2:
         area2, area1 = area1, area2
-    if float(area1) / float(area2) > 0.8:
+    if float(area2) / float(area1) > 0.8:
         return True
     return False
+
+def compare_area(area1, area2):
+    # Place the one with bigger area as the denominator
+    if area1 > area2:
+        area2, area1 = area1, area2
+    return float(area1) / float(area2)
     
 
 def two_iou_overlapped(bbox_1, bbox_2, segment_bbox):
@@ -67,12 +73,12 @@ def two_iou_overlapped(bbox_1, bbox_2, segment_bbox):
     return False
     
 
-
-
-root_directory = "/Users/joycelynchen/Desktop/UBC/Research/Program/Single_shell_case_study/outputs"
+# root directory to the SAM output masks 
+root_directory = "/home/joy0921/Desktop/2023S/SAM_outputs/outputs_200"
 
 # Create a dictionary to store the target track
 target_track = []           # list of tracks: [track1, track2]
+
 
 # Get all the CSV files in the root directory and its subdirectories
 #+--------------------------------------------------------------------------------------------------+
@@ -83,10 +89,11 @@ csv_files = [os.path.join(root, file) for root, _, files in os.walk(root_directo
 
 
 
-time_path = {}                                              # {200 : file_path, 201:file_path}
+time_path = {}          # {200+z : file_path, 201 (z = 1):file_path}
 for file in csv_files:
-    time = int(file.split("/")[-2].split("_")[-2])          # to retrieve the 0200
-    time_path[time] = file
+    time = int(file.split("/")[-2].split("_")[-2])      # to retrieve the 0200
+    z = int(file.split("/")[-2].split("_")[-1][1:])     # to retrieve the z199
+    time_path[time+z] = file
 
 # # Sort the CSV files by their dir name
 # sorted_time_path = sorted(time_path.items(), key=lambda x:x[0])
@@ -107,8 +114,9 @@ for csv_file in sorted_csv_files:
 
     # Record the time stamp for all segments
     time = int(csv_file.split("/")[-2].split("_")[-2])
+    z = int(csv_file.split("/")[-2].split("_")[-1][1:])
     for segment in segments:
-        segment["time_stamp"] = time
+        segment["time_stamp"] = time + z
 
     # Find the segment with the largest intersection of union with the previous time stamp
     if len(target_track) == 0:
@@ -146,19 +154,31 @@ for csv_file in sorted_csv_files:
             prev_segment = target.tracker[-1]       # output a segment (time, id, area, bbox) prev_segment.bbox
             max_iou = 0.0
             best_match = None
-            for segment in segments:
-                segment_bbox = [float(segment["bbox_x0"]), float(segment["bbox_y0"]), float(segment["bbox_w"]), float(segment["bbox_h"])]
-                iou = calculate_iou(prev_segment.bbox, segment_bbox)
-                if iou > max_iou:
-                    if len(target.tracker) > 2:
-                        # compare the two time stamp before, area and iou
-                        if not (has_similar_size(prev_segment.area, int(segment["area"])) and two_iou_overlapped(target.tracker[-1].bbox, target.tracker[-2].bbox, segment_bbox)):
-                            continue
 
+            max_area_similarity = 0.0
+
+            for segment in segments:
+                area_ratio = compare_area(prev_segment.area, int(segment["area"]))
+                if area_ratio > max_area_similarity:
+                    print(area_ratio)
+                    max_area_similarity = area_ratio
                     best_match = segment_obj(int(segment["time_stamp"]), int(segment["id"]), int(segment["area"]), [float(segment["bbox_x0"]), float(segment["bbox_y0"]),
                                                                                                      float(segment["bbox_w"]), float(segment["bbox_h"])])
+            
+
+                # segment_bbox = [float(segment["bbox_x0"]), float(segment["bbox_y0"]), float(segment["bbox_w"]), float(segment["bbox_h"])]
+                # iou = calculate_iou(prev_segment.bbox, segment_bbox)
+                # if iou > max_iou:
+                #     if len(target.tracker) > 2:
+                #         # compare the two time stamp before, both area and iou, to ensure that it's actually the right continuous segment
+                #         if not (has_similar_size(prev_segment.area, int(segment["area"])) and two_iou_overlapped(target.tracker[-1].bbox, target.tracker[-2].bbox, segment_bbox)):
+                #             continue
+
+                #     best_match = segment_obj(int(segment["time_stamp"]), int(segment["id"]), int(segment["area"]), [float(segment["bbox_x0"]), float(segment["bbox_y0"]),
+                #                                                                                      float(segment["bbox_w"]), float(segment["bbox_h"])])
             if best_match is not None:
                 target.tracker.append(best_match)
+    
 
 
 # # Print the target track
@@ -176,9 +196,12 @@ for csv_file in sorted_csv_files:
 
 # DEBUG: check if the definitions are correct
 
-for i, target in enumerate(target_track):
-    # print(f"{i}:\ninit_time: {target.initial_time}\tinit_id: {target.initial_id}\t tracker len: {len(target.tracker)}")
-    if int(target.initial_id) == 7 and int(target.initial_time) == 200:
-        print("+---------Case study Result------------+")
-        for j, seg in enumerate(target.tracker):
-            print(f"[{j}]  Time stamp: {seg.time_stamp}\tId: {seg.id}\tArea: {seg.area}")
+with open("tmp.sh", "w") as f:
+    for i, target in enumerate(target_track):
+        # print(f"{i}:\ninit_time: {target.initial_time}\tinit_id: {target.initial_id}\t tracker len: {len(target.tracker)}")
+        if int(target.initial_id) == 17 and int(target.initial_time) == 200:
+            print("+---------Case study Result------------+")
+            for j, seg in enumerate(target.tracker):
+                print(f"[{j}]  Time stamp: {seg.time_stamp}\tId: {seg.id}\tArea: {seg.area}")
+                f.write("cp ")      #'/home/joy0921/Desktop/2023S/SAM_outputs/outputs_200' + 'sn34_smd132_bx5_pe300_hdf5_plt_cnt_0200' + f'_z{seg.id}.png'
+
