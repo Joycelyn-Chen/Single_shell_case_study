@@ -194,7 +194,10 @@ for csv_file in sorted_csv_files:
 
 
 
-# DEBUG: check if the definitions are correct
+# DEBUG: check if the route definitions are correct
+
+mask_root = '/home/joy0921/Desktop/2023S/SAM_outputs/outputs_200'
+folder_root = 'sn34_smd132_bx5_pe300_hdf5_plt_cnt_0200'
 
 with open("tmp.sh", "w") as f:
     for i, target in enumerate(target_track):
@@ -203,5 +206,5 @@ with open("tmp.sh", "w") as f:
             print("+---------Case study Result------------+")
             for j, seg in enumerate(target.tracker):
                 print(f"[{j}]  Time stamp: {seg.time_stamp}\tId: {seg.id}\tArea: {seg.area}")
-                f.write("cp ")      #'/home/joy0921/Desktop/2023S/SAM_outputs/outputs_200' + 'sn34_smd132_bx5_pe300_hdf5_plt_cnt_0200' + f'_z{seg.id}.png'
+                f.write(f"cp {os.path.join(mask_root, f'{folder_root}_z{seg.time_stamp - 200}', f'{seg.id}.png')} case_masks")      
 

@@ -11,9 +11,6 @@ img_name = img2_filename.split("/")[-2]
 assert img1 is not None, "file could not be read, check with os.path.exists()"
 # assert img2 is not None, "file could not be read, check with os.path.exists()"
 
-
-
-
 out_img = cv.addWeighted(img1, 1, img2, 1, 0)
 
 out_path = os.path.join("/Users/joycelynchen/Desktop/UBC/Research/Program/Single_shell_case_study/case_masks", img_name)
