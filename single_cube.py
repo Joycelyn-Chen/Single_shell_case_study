@@ -160,7 +160,6 @@ for csv_file in sorted_csv_files:
             for segment in segments:
                 area_ratio = compare_area(prev_segment.area, int(segment["area"]))
                 if area_ratio > max_area_similarity:
-                    print(area_ratio)
                     max_area_similarity = area_ratio
                     best_match = segment_obj(int(segment["time_stamp"]), int(segment["id"]), int(segment["area"]), [float(segment["bbox_x0"]), float(segment["bbox_y0"]),
                                                                                                      float(segment["bbox_w"]), float(segment["bbox_h"])])
@@ -206,5 +205,5 @@ with open("tmp.sh", "w") as f:
             print("+---------Case study Result------------+")
             for j, seg in enumerate(target.tracker):
                 print(f"[{j}]  Time stamp: {seg.time_stamp}\tId: {seg.id}\tArea: {seg.area}")
-                f.write(f"cp {os.path.join(mask_root, f'{folder_root}_z{seg.time_stamp - 200}', f'{seg.id}.png')} case_masks")      
+                f.write(f"cp {os.path.join(mask_root, f'{folder_root}_z{seg.time_stamp - 200}', f'{seg.id}.png')} {os.path.join('case_masks', f'{folder_root}_z{seg.time_stamp - 200}.png')}\n")      
 
