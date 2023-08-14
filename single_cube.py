@@ -100,125 +100,132 @@ target_track = []           # list of tracks: [track1, track2]
 #+--------------------------------------------------------------------------------------------------+
 csv_files = [os.path.join(root, file) for root, _, files in os.walk(root_directory) for file in files if file.endswith(".csv")]
 
+begin_time = 200
+end_time = 360
+
+for timestamp in range(begin_time, end_time):
+    current_batch = []
+    for file in csv_files:
+        if int(file.split("/")[-2].split("_")[-2]) == timestamp:
+            current_batch.append(file)
+
+    time_path = {}          # {200+z : file_path, 201 (z = 1):file_path}
+    for file in current_batch:
+        time = int(file.split("/")[-2].split("_")[-2])      # to retrieve the 0200
+        z = int(file.split("/")[-2].split("_")[-1][1:])     # to retrieve the z199
+        time_path[time+z] = file
+
+    # # Sort the CSV files by their dir name
+    # sorted_time_path = sorted(time_path.items(), key=lambda x:x[0])
+    sorted_csv_files = []
+    for key in sorted(time_path):
+        # print(key, ": ", time_path[key])
+        sorted_csv_files.append(time_path[key])
 
 
-time_path = {}          # {200+z : file_path, 201 (z = 1):file_path}
-for file in csv_files:
-    time = int(file.split("/")[-2].split("_")[-2])      # to retrieve the 0200
-    z = int(file.split("/")[-2].split("_")[-1][1:])     # to retrieve the z199
-    time_path[time+z] = file
+    # Process each CSV file
+    for csv_file in sorted_csv_files:
+        with open(csv_file, "r") as file:
+            reader = csv.DictReader(file)
+            segments = list(reader)
 
-# # Sort the CSV files by their dir name
-# sorted_time_path = sorted(time_path.items(), key=lambda x:x[0])
-sorted_csv_files = []
-for key in sorted(time_path):
-    # print(key, ": ", time_path[key])
-    sorted_csv_files.append(time_path[key])
+        if len(segments) == 0:
+            continue
 
+        # Record the time stamp for all segments
+        time = int(csv_file.split("/")[-2].split("_")[-2])
+        z = int(csv_file.split("/")[-2].split("_")[-1][1:])
+        for segment in segments:
+            segment["time_stamp"] = time + z
 
-# Process each CSV file
-for csv_file in sorted_csv_files:
-    with open(csv_file, "r") as file:
-        reader = csv.DictReader(file)
-        segments = list(reader)
+        # Find the segment with the largest intersection of union with the previous time stamp
+        if len(target_track) == 0:
+            # If it's the first CSV file, record all segments
+            for i, segment in enumerate(segments):
+                target_track.append(track(segment["time_stamp"], segment["id"]))
+                target_track[i].tracker.append(segment_obj(int(segment["time_stamp"]), int(segment["id"]), int(segment["area"]), [float(segment["bbox_x0"]), float(segment["bbox_y0"]),
+                                                                                                        float(segment["bbox_w"]), float(segment["bbox_h"])]))
+                # target_track[segment["time_stamp"]].append(segment)
+        else:
+            # previous_segments = target_track[list(target_track.keys())[-1]]
 
-    if len(segments) == 0:
-        continue
+            # for segment in segments:
+            #     max_iou = 0.0
+            #     best_match = None
 
-    # Record the time stamp for all segments
-    time = int(csv_file.split("/")[-2].split("_")[-2])
-    z = int(csv_file.split("/")[-2].split("_")[-1][1:])
-    for segment in segments:
-        segment["time_stamp"] = time + z
+            #     for prev_segment in previous_segments:
+            #         iou = calculate_iou(
+            #             [float(prev_segment["bbox_x0"]), float(prev_segment["bbox_y0"]),
+            #              float(prev_segment["bbox_w"]), float(prev_segment["bbox_h"])],
+            #             [float(segment["bbox_x0"]), float(segment["bbox_y0"]),
+            #              float(segment["bbox_w"]), float(segment["bbox_h"])]
+            #         )
 
-    # Find the segment with the largest intersection of union with the previous time stamp
-    if len(target_track) == 0:
-        # If it's the first CSV file, record all segments
-        for i, segment in enumerate(segments):
-            target_track.append(track(segment["time_stamp"], segment["id"]))
-            target_track[i].tracker.append(segment_obj(int(segment["time_stamp"]), int(segment["id"]), int(segment["area"]), [float(segment["bbox_x0"]), float(segment["bbox_y0"]),
-                                                                                                     float(segment["bbox_w"]), float(segment["bbox_h"])]))
-            # target_track[segment["time_stamp"]].append(segment)
-    else:
-        # previous_segments = target_track[list(target_track.keys())[-1]]
+            #         if iou > max_iou:
+            #             max_iou = iou
+            #             best_match = segment   #originally: best_match = prev_segment
+            #             best_match["prev_time"] = prev_segment["time_stamp"]
+            #             best_match["prev_id"] = prev_segment["id"]
 
-        # for segment in segments:
-        #     max_iou = 0.0
-        #     best_match = None
+            #     if best_match is not None:
+            #         target_track[segment["time_stamp"]].append(best_match)
 
-        #     for prev_segment in previous_segments:
-        #         iou = calculate_iou(
-        #             [float(prev_segment["bbox_x0"]), float(prev_segment["bbox_y0"]),
-        #              float(prev_segment["bbox_w"]), float(prev_segment["bbox_h"])],
-        #             [float(segment["bbox_x0"]), float(segment["bbox_y0"]),
-        #              float(segment["bbox_w"]), float(segment["bbox_h"])]
-        #         )
+            for target in target_track:
+                prev_segment = target.tracker[-1]       # output a segment (time, id, area, bbox) prev_segment.bbox
+                max_iou = 0.0
+                best_match = None
 
-        #         if iou > max_iou:
-        #             max_iou = iou
-        #             best_match = segment   #originally: best_match = prev_segment
-        #             best_match["prev_time"] = prev_segment["time_stamp"]
-        #             best_match["prev_id"] = prev_segment["id"]
+                max_area_similarity = 0.0
 
-        #     if best_match is not None:
-        #         target_track[segment["time_stamp"]].append(best_match)
+                for segment in segments:
+                    segment_bbox = [float(segment["bbox_x0"]), float(segment["bbox_y0"]), float(segment["bbox_w"]), float(segment["bbox_h"])]
+                    if in_the_target_area(prev_segment.bbox, segment_bbox):
+                        area_ratio = compare_area(prev_segment.area, int(segment["area"]))
+                        if area_ratio > max_area_similarity:
+                            max_area_similarity = area_ratio
+                            best_match = segment_obj(int(segment["time_stamp"]), int(segment["id"]), int(segment["area"]), [float(segment["bbox_x0"]), float(segment["bbox_y0"]),
+                                                                                                            float(segment["bbox_w"]), float(segment["bbox_h"])])
+                    
 
-        for target in target_track:
-            prev_segment = target.tracker[-1]       # output a segment (time, id, area, bbox) prev_segment.bbox
-            max_iou = 0.0
-            best_match = None
+                    # segment_bbox = [float(segment["bbox_x0"]), float(segment["bbox_y0"]), float(segment["bbox_w"]), float(segment["bbox_h"])]
+                    # iou = calculate_iou(prev_segment.bbox, segment_bbox)
+                    # if iou > max_iou:
+                    #     if len(target.tracker) > 2:
+                    #         # compare the two time stamp before, both area and iou, to ensure that it's actually the right continuous segment
+                    #         if not (has_similar_size(prev_segment.area, int(segment["area"])) and two_iou_overlapped(target.tracker[-1].bbox, target.tracker[-2].bbox, segment_bbox)):
+                    #             continue
 
-            max_area_similarity = 0.0
-
-            for segment in segments:
-                segment_bbox = [float(segment["bbox_x0"]), float(segment["bbox_y0"]), float(segment["bbox_w"]), float(segment["bbox_h"])]
-                if in_the_target_area(prev_segment.bbox, segment_bbox):
-                    area_ratio = compare_area(prev_segment.area, int(segment["area"]))
-                    if area_ratio > max_area_similarity:
-                        max_area_similarity = area_ratio
-                        best_match = segment_obj(int(segment["time_stamp"]), int(segment["id"]), int(segment["area"]), [float(segment["bbox_x0"]), float(segment["bbox_y0"]),
-                                                                                                        float(segment["bbox_w"]), float(segment["bbox_h"])])
-                
-
-                # segment_bbox = [float(segment["bbox_x0"]), float(segment["bbox_y0"]), float(segment["bbox_w"]), float(segment["bbox_h"])]
-                # iou = calculate_iou(prev_segment.bbox, segment_bbox)
-                # if iou > max_iou:
-                #     if len(target.tracker) > 2:
-                #         # compare the two time stamp before, both area and iou, to ensure that it's actually the right continuous segment
-                #         if not (has_similar_size(prev_segment.area, int(segment["area"])) and two_iou_overlapped(target.tracker[-1].bbox, target.tracker[-2].bbox, segment_bbox)):
-                #             continue
-
-                #     best_match = segment_obj(int(segment["time_stamp"]), int(segment["id"]), int(segment["area"]), [float(segment["bbox_x0"]), float(segment["bbox_y0"]),
-                #                                                                                      float(segment["bbox_w"]), float(segment["bbox_h"])])
-            if best_match is not None:
-                target.tracker.append(best_match)
-    
+                    #     best_match = segment_obj(int(segment["time_stamp"]), int(segment["id"]), int(segment["area"]), [float(segment["bbox_x0"]), float(segment["bbox_y0"]),
+                    #                                                                                      float(segment["bbox_w"]), float(segment["bbox_h"])])
+                if best_match is not None:
+                    target.tracker.append(best_match)
+        
 
 
-# # Print the target track
-# for time_stamp, segments in target_track.items():
-#     print("Time Stamp:", time_stamp)
-#     for segment in segments:
-#         print("Segment:", segment)
+    # # Print the target track
+    # for time_stamp, segments in target_track.items():
+    #     print("Time Stamp:", time_stamp)
+    #     for segment in segments:
+    #         print("Segment:", segment)
 
-# single_track = traverse_track(initial_id = 7, initial_time_stamp = 210, target_track = target_track)
+    # single_track = traverse_track(initial_id = 7, initial_time_stamp = 210, target_track = target_track)
 
-# for track in single_track:
-#     print(track)
+    # for track in single_track:
+    #     print(track)
 
 
 
-# DEBUG: check if the route definitions are correct
+    # DEBUG: check if the route definitions are correct
 
-mask_root = root_directory #'/home/joy0921/Desktop/2023S/SAM_outputs/outputs_200'
-folder_root = 'sn34_smd132_bx5_pe300_hdf5_plt_cnt_0200'
+    mask_root = root_directory #'/home/joy0921/Desktop/2023S/SAM_outputs/outputs_200'
+    folder_root = f'sn34_smd132_bx5_pe300_hdf5_plt_cnt_0{timestamp}'
 
-with open("tmp.sh", "w") as f:
-    for i, target in enumerate(target_track):
-        # print(f"{i}:\ninit_time: {target.initial_time}\tinit_id: {target.initial_id}\t tracker len: {len(target.tracker)}")
-        if int(target.initial_id) == 17 and int(target.initial_time) == 200:
-            print("+---------Case study Result------------+")
-            for j, seg in enumerate(target.tracker):
-                print(f"[{j}]  Time stamp: {seg.time_stamp}\tId: {seg.id}\tArea: {seg.area}")
-                f.write(f"cp {os.path.join(mask_root, f'{folder_root}_z{seg.time_stamp - 200}', f'{seg.id}.png')} {os.path.join('case_masks', f'{folder_root}_z{seg.time_stamp - 200}.png')}\n")      
-
+    with open("tmp.sh", "w") as f:
+        for i, target in enumerate(target_track):
+            # print(f"{i}:\ninit_time: {target.initial_time}\tinit_id: {target.initial_id}\t tracker len: {len(target.tracker)}")
+            if int(target.initial_id) == 17 and int(target.initial_time) == timestamp:
+                print("+---------Case study Result------------+")
+                for j, seg in enumerate(target.tracker):
+                    print(f"[{j}]  Time stamp: {seg.time_stamp}\tId: {seg.id}\tArea: {seg.area}")
+                    f.write(f"cp {os.path.join(mask_root, f'{folder_root}_z{seg.time_stamp - timestamp}', f'{seg.id}.png')} {os.path.join('case_masks', f'{folder_root}_z{seg.time_stamp - timestamp}.png')}\n")      
+    print(f"+---------Done with t = {timestamp}------------+\n\n")
