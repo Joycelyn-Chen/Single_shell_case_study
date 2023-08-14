@@ -72,6 +72,16 @@ def two_iou_overlapped(bbox_1, bbox_2, segment_bbox):
         return True
     return False
     
+def in_the_target_area(bbox1, bbox2):
+    extension = 100
+
+    x1, y1, w1, h1 = bbox1  # the base, previous segment
+    x2, y2, w2, h2 = bbox2  # the target segment
+
+    if (x2 > x1 - extension) and (y2 > y1 - extension) and (w2 < w1 + extension) and (h2 < h1 + extension):
+        return True
+    return False
+
 
 # root directory to the SAM output masks 
 root_directory = "/home/joy0921/Desktop/2023S/SAM_outputs/outputs_200"
@@ -158,12 +168,14 @@ for csv_file in sorted_csv_files:
             max_area_similarity = 0.0
 
             for segment in segments:
-                area_ratio = compare_area(prev_segment.area, int(segment["area"]))
-                if area_ratio > max_area_similarity:
-                    max_area_similarity = area_ratio
-                    best_match = segment_obj(int(segment["time_stamp"]), int(segment["id"]), int(segment["area"]), [float(segment["bbox_x0"]), float(segment["bbox_y0"]),
-                                                                                                     float(segment["bbox_w"]), float(segment["bbox_h"])])
-            
+                segment_bbox = [float(segment["bbox_x0"]), float(segment["bbox_y0"]), float(segment["bbox_w"]), float(segment["bbox_h"])]
+                if in_the_target_area(prev_segment.bbox, segment_bbox):
+                    area_ratio = compare_area(prev_segment.area, int(segment["area"]))
+                    if area_ratio > max_area_similarity:
+                        max_area_similarity = area_ratio
+                        best_match = segment_obj(int(segment["time_stamp"]), int(segment["id"]), int(segment["area"]), [float(segment["bbox_x0"]), float(segment["bbox_y0"]),
+                                                                                                        float(segment["bbox_w"]), float(segment["bbox_h"])])
+                
 
                 # segment_bbox = [float(segment["bbox_x0"]), float(segment["bbox_y0"]), float(segment["bbox_w"]), float(segment["bbox_h"])]
                 # iou = calculate_iou(prev_segment.bbox, segment_bbox)
