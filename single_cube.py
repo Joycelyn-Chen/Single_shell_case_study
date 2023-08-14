@@ -74,7 +74,10 @@ def two_iou_overlapped(bbox_1, bbox_2, segment_bbox):
     
 
 # root directory to the SAM output masks 
-root_directory = "/home/joy0921/Desktop/2023S/SAM_outputs/outputs_200"
+# CV lab computer
+#root_directory = "/home/joy0921/Desktop/2023S/SAM_outputs/outputs_200"
+# compute2.idsl
+root_directory = "/home/joy0921/Desktop/Segmentation/segment-anything/outputs_200_210_missing"
 
 # Create a dictionary to store the target track
 target_track = []           # list of tracks: [track1, track2]
@@ -195,7 +198,7 @@ for csv_file in sorted_csv_files:
 
 # DEBUG: check if the route definitions are correct
 
-mask_root = '/home/joy0921/Desktop/2023S/SAM_outputs/outputs_200'
+mask_root = root_directory #'/home/joy0921/Desktop/2023S/SAM_outputs/outputs_200'
 folder_root = 'sn34_smd132_bx5_pe300_hdf5_plt_cnt_0200'
 
 with open("tmp.sh", "w") as f:
