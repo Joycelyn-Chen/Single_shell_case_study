@@ -87,7 +87,7 @@ def in_the_target_area(bbox1, bbox2):
 # CV lab computer
 #root_directory = "/home/joy0921/Desktop/2023S/SAM_outputs/outputs_200"
 # compute2.idsl
-root_directory = "/home/joy0921/Desktop/Segmentation/segment-anything/outputs_200_210_missing"
+root_directory = "/home/joy0921/Desktop/Dataset/200_210/outputs/201"
 
 # Create a dictionary to store the target track
 target_track = []           # list of tracks: [track1, track2]
@@ -100,8 +100,8 @@ target_track = []           # list of tracks: [track1, track2]
 #+--------------------------------------------------------------------------------------------------+
 csv_files = [os.path.join(root, file) for root, _, files in os.walk(root_directory) for file in files if file.endswith(".csv")]
 
-begin_time = 200
-end_time = 360
+begin_time = 201
+end_time = 201
 
 for timestamp in range(begin_time, end_time):
     current_batch = []
@@ -219,13 +219,16 @@ for timestamp in range(begin_time, end_time):
 
     mask_root = root_directory #'/home/joy0921/Desktop/2023S/SAM_outputs/outputs_200'
     folder_root = f'sn34_smd132_bx5_pe300_hdf5_plt_cnt_0{timestamp}'
+    first_seg_id = 1
 
     with open("tmp.sh", "w") as f:
         for i, target in enumerate(target_track):
             # print(f"{i}:\ninit_time: {target.initial_time}\tinit_id: {target.initial_id}\t tracker len: {len(target.tracker)}")
-            if int(target.initial_id) == 17 and int(target.initial_time) == timestamp:
+            if int(target.initial_id) == first_seg_id and int(target.initial_time) == timestamp:
                 print("+---------Case study Result------------+")
                 for j, seg in enumerate(target.tracker):
                     print(f"[{j}]  Time stamp: {seg.time_stamp}\tId: {seg.id}\tArea: {seg.area}")
                     f.write(f"cp {os.path.join(mask_root, f'{folder_root}_z{seg.time_stamp - timestamp}', f'{seg.id}.png')} {os.path.join('case_masks', f'{folder_root}_z{seg.time_stamp - timestamp}.png')}\n")      
     print(f"+---------Done with t = {timestamp}------------+\n\n")
+
+# 201:1, 
