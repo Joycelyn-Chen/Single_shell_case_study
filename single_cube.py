@@ -101,7 +101,7 @@ target_track = []           # list of tracks: [track1, track2]
 csv_files = [os.path.join(root, file) for root, _, files in os.walk(root_directory) for file in files if file.endswith(".csv")]
 
 begin_time = 201
-end_time = 201
+end_time = 202
 
 for timestamp in range(begin_time, end_time):
     current_batch = []

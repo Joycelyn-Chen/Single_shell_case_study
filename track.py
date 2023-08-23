@@ -21,7 +21,9 @@ def convert_binary_mask_to_red(mask_path):
     return red_mask
 
 masks_folder = "./case_masks"
-img_folder = "/home/joy0921/Desktop/2023S/Dataset/200/finer_time_200"
+# CV lab server
+#img_folder = "/home/joy0921/Desktop/2023S/Dataset/200/finer_time_200"
+img_folder = "/home/joy0921/Desktop/Dataset/200_210/finer_time_200_210"
 track_folder = "./track_output"
 
 
