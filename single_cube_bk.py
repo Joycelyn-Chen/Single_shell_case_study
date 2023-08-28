@@ -9,9 +9,9 @@ class track:
         self.tracker = []       # list of segments: [segment1, segment2]
 
 
-class segment_obj:      #here
-    def __init__(self, time_stamp, id, area, bbox):     
-        self.time_stamp = time_stamp        #here
+class segment_obj:
+    def __init__(self, time_stamp, id, area, bbox):
+        self.time_stamp = time_stamp
         self.id = id
         self.area = area
         self.bbox = bbox        #(bbox_x, bbox_y, bbox_w, bbox_h)
@@ -84,7 +84,7 @@ def in_the_target_area(bbox1, bbox2):
 
 def record_all_segments(segments, target_tracks):
     for i, segment in enumerate(segments):
-        target_tracks.append(track(segment["time_stamp"], segment["id"]))       #here
+        target_tracks.append(track(segment["time_stamp"], segment["id"]))
         target_tracks[i].tracker.append(segment_obj(int(segment["time_stamp"]), int(segment["id"]), int(segment["area"]), [float(segment["bbox_x0"]), float(segment["bbox_y0"]),
                                                                                                 float(segment["bbox_w"]), float(segment["bbox_h"])]))
     return target_tracks
@@ -96,7 +96,8 @@ def record_all_segments(segments, target_tracks):
 # compute2.idsl
 root_directory = "/home/joy0921/Desktop/Dataset/200_210/outputs/201"
 
-
+# Create a dictionary to store the target track
+target_tracks = []           # list of tracks: [track1, track2]
 
 
 # Get all the CSV files in the root directory and its subdirectories
@@ -108,9 +109,6 @@ csv_files = [os.path.join(root, file) for root, _, files in os.walk(root_directo
 
 begin_time = 201
 end_time = 202
-
-# Create a dictionary to store the target track
-target_tracks = {i: [] for i in range(begin_time, end_time)}           # dict of tracks: {200: [track1], 201: [track2]...}
 
 for timestamp in range(begin_time, end_time):
     current_batch = []
@@ -138,14 +136,14 @@ for timestamp in range(begin_time, end_time):
             reader = csv.DictReader(file)
             segments = list(reader)
 
-        if len(segments) == 0:      # if no generated masks from SAM, then continue reading the next file
+        if len(segments) == 0:
             continue
 
         # Record the time stamp for all segments
         time = int(csv_file.split("/")[-2].split("_")[-2])
         z = int(csv_file.split("/")[-2].split("_")[-1][1:])
         for segment in segments:
-            segment["time_stamp"] = time + z        #here
+            segment["time_stamp"] = time + z
 
         # Find the segment with the largest intersection of union with the previous time stamp
         if len(target_tracks) == 0:              # If it's the first CSV file, record all segments
@@ -168,7 +166,7 @@ for timestamp in range(begin_time, end_time):
                     if in_the_target_area(prev_segment.bbox, segment_bbox):
                         area_ratio = compare_area(prev_segment.area, int(segment["area"]))
                         if area_ratio > max_area_similarity:
-                            max_area_similarity = area_ratio            #here
+                            max_area_similarity = area_ratio
                             best_match = segment_obj(int(segment["time_stamp"]), int(segment["id"]), int(segment["area"]), [float(segment["bbox_x0"]), float(segment["bbox_y0"]),
                                                                                                                             float(segment["bbox_w"]), float(segment["bbox_h"])])
                     
@@ -202,7 +200,7 @@ for timestamp in range(begin_time, end_time):
             if int(target.initial_id) == first_seg_id and int(target.initial_time) == timestamp:
                 print("+---------Case study Result------------+")
                 for j, seg in enumerate(target.tracker):
-                    print(f"[{j}]  Time stamp: {seg.time_stamp}\tId: {seg.id}\tArea: {seg.area}")       #here*3
+                    print(f"[{j}]  Time stamp: {seg.time_stamp}\tId: {seg.id}\tArea: {seg.area}")
                     f.write(f"cp {os.path.join(mask_root, f'{folder_root}_z{seg.time_stamp - timestamp}', f'{seg.id}.png')} {os.path.join('case_masks', f'{folder_root}_z{seg.time_stamp - timestamp}.png')}\n")      
     print(f"+---------Done with t = {timestamp}------------+\n\n")
 
