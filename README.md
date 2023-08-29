@@ -1,5 +1,18 @@
 # Single_shell_case_study
 
+## Running SAM
+
+
+## If missing 
+- 
+
+## Pre-process
+- Check all the folders are clean and empty
+    - case_masks/
+    - track_outputs
+- Check all the paths in the `single_cube.py` is pointing to the right place
+
+
 ## Generating tracking results
 1. `single_cube.py`
 - On compute2.idsl: Execute `python single_cube.py`
