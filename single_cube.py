@@ -295,9 +295,10 @@ for timestamp in range(begin_time + 1, end_time):
 
                 if prev_t_segment is not None:
                     # find best match for both prev_z and prev_t, if they match, good, if doesn't, move on for now          # debug
-                    best_match_t, _ = search4best_match_in_segments(prev_t_segment, segments)
-                    if not best_match.id == best_match_t.id:
-                        best_match = None
+                    # best_match_t, _ = search4best_match_in_segments(prev_t_segment, segments)
+                    # if not best_match.id == best_match_t.id:
+                    #     best_match = None
+                    best_match, _ = search4best_match_in_segments(prev_t_segment, segments)
 
                 if best_match is not None:
                     target.tracker.append(best_match)
