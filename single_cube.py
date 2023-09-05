@@ -7,7 +7,7 @@ class track:
         self.initial_time = initial_time
         self.initial_id = initial_id
         self.prev_timestamp_segID = None
-        self.next_timestamp_segID = None
+        self.next_timestamp_segID = []          # list of next associated segments
 
         self.tracker = []       # list of segments: [segment1, segment2]
 
@@ -76,7 +76,7 @@ def two_iou_overlapped(bbox_1, bbox_2, segment_bbox):
     return False
     
 def in_the_target_area(bbox1, bbox2):
-    extension = 100
+    extension = 200
 
     x1, y1, w1, h1 = bbox1  # the base, previous segment
     x2, y2, w2, h2 = bbox2  # the target segment
@@ -116,7 +116,8 @@ def record_all_segments(segments, target_tracks, timestamp, begin_time):
 
             if best_match is not None:
                 target_tracks[timestamp][i].prev_timestamp_segID = best_match.id
-                target_tracks[timestamp - 1][prev_trackID].next_timestamp_segID = target_segment.id
+                # target_tracks[timestamp - 1][prev_trackID].next_timestamp_segID = target_segment.id
+                target_tracks[timestamp - 1][prev_trackID].next_timestamp_segID.append(target_segment.id)
 
     return target_tracks
 
@@ -188,6 +189,10 @@ def trace_back_2_1st_timestamp(timestamp, begin_time, first_seg_id):
 
     return next_timestamp_segID
 
+def search4better_match(best_match_1, max_area_sim_1, best_match_2, max_area_sim_2):
+    if(max_area_sim_2 > max_area_sim_1):
+        return best_match_2
+    return best_match_1
 
 # root directory to the SAM output masks 
 # CV lab computer
@@ -204,7 +209,7 @@ mask_root = "/home/joy0921/Desktop/2023S/Dataset/200_210/mask_outputs"    # magi
 csv_files = [os.path.join(root, file) for root, _, files in os.walk(mask_root) for file in files if file.endswith(".csv")]
 
 begin_time = 200                                                        # magic
-end_time = 202                                                          # magic
+end_time = 204                                                          # magic
 
 # Create a dictionary to store the target track
 target_tracks = {i: [] for i in range(begin_time, end_time)}           # dict of tracks: {200: [track1], 201: [track2]...}
@@ -240,7 +245,7 @@ for csv_file in sorted_csv_files:
 
 
 folder_root = adding_astro_prefix(begin_time)    
-first_seg_id = 17                                                       # magic
+very_first_seg_id = 17                                                       # magic
 
 with open("tmp.sh", "w") as f:
     f.write("rm -rf case_masks\n")
@@ -249,7 +254,7 @@ with open("tmp.sh", "w") as f:
         if i == 17:
             print(target.initial_time)
         # print(f"{i}:\ninit_time: {target.initial_time}\tinit_id: {target.initial_id}\t tracker len: {len(target.tracker)}")
-        if int(target.initial_id) == first_seg_id and int(target.initial_time) == begin_time:
+        if int(target.initial_id) == very_first_seg_id and int(target.initial_time) == begin_time:
             print("+---------Case study Result------------+")
             for j, seg in enumerate(target.tracker):
                 print(f"[{j}]  Time stamp: {begin_time} - {seg.slice_z}\tId: {seg.id}\tArea: {seg.area}")       
@@ -268,6 +273,7 @@ for timestamp in range(begin_time + 1, end_time):
     # Sort the CSV files by their dir name
     sorted_csv_files = sort_csv_files(time_path)
     
+    
     # Process each CSV file
     for csv_file in sorted_csv_files:
         with open(csv_file, "r") as file:
@@ -285,30 +291,38 @@ for timestamp in range(begin_time + 1, end_time):
         # Find the segment with the largest intersection of union with the previous time stamp
         if len(target_tracks[timestamp]) == 0:              # If it's the first CSV file of the timestamp, record all segments
             target_tracks = record_all_segments(segments, target_tracks, timestamp, begin_time)
-            
+
         else:
             # for the subsequent timestamps
             for target in target_tracks[timestamp]:
                 prev_z_segment = target.tracker[-1]
                 prev_t_segment = search4corresponding_z(target.tracker, z)  
-                best_match, _ = search4best_match_in_segments(prev_z_segment, segments)
+                best_match, max_area_similarity = search4best_match_in_segments(prev_z_segment, segments)
 
                 if prev_t_segment is not None:
                     # find best match for both prev_z and prev_t, if they match, good, if doesn't, move on for now          # debug
                     # best_match_t, _ = search4best_match_in_segments(prev_t_segment, segments)
                     # if not best_match.id == best_match_t.id:
                     #     best_match = None
-                    best_match, _ = search4best_match_in_segments(prev_t_segment, segments)
+                    best_match_t, max_area_similarity_t = search4best_match_in_segments(prev_t_segment, segments)
+                    best_match = search4better_match(best_match, max_area_similarity, best_match_t, max_area_similarity_t)
 
                 if best_match is not None:
                     target.tracker.append(best_match)
+
         
 
 
     # DEBUG: check if the route definitions are correct
 
     folder_root = adding_astro_prefix(timestamp)
-    first_seg_id = trace_back_2_1st_timestamp(timestamp, begin_time, first_seg_id)                                   
+    first_seg_id = trace_back_2_1st_timestamp(timestamp, begin_time, very_first_seg_id)    
+
+    if timestamp == 203:
+        print(f"first seg ID: {first_seg_id}")    
+        for target in target_tracks[203]:
+            print(f"Initial ID: {target.initial_id}\tprev Id: {target.prev_timestamp_segID}")
+            print(f"prev - next: {target_tracks[202][target.prev_timestamp_segID].next_timestamp_segID}")
 
     with open("tmp.sh", "a+") as f:
         for i, target in enumerate(target_tracks[timestamp]):
