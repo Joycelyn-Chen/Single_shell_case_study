@@ -194,6 +194,22 @@ def search4better_match(best_match_1, max_area_sim_1, best_match_2, max_area_sim
         return best_match_2
     return best_match_1
 
+
+def search4best_match_in_first_segments(target_segment, seg_candidates):
+    max_area_similarity = 0.0
+    best_match = None
+    
+    for segment in seg_candidates:
+        if in_the_target_area(target_segment.bbox, segment.bbox):
+            area_ratio = compare_area(target_segment.area, segment.area)
+            if area_ratio > max_area_similarity:
+                max_area_similarity = area_ratio
+                best_match = segment
+
+    return best_match
+
+
+
 # root directory to the SAM output masks 
 # CV lab computer
 mask_root = "/home/joy0921/Desktop/2023S/Dataset/200_210/mask_outputs"    # magic
@@ -246,6 +262,7 @@ for csv_file in sorted_csv_files:
 
 folder_root = adding_astro_prefix(begin_time)    
 very_first_seg_id = 17                                                       # magic
+first_seg_id = very_first_seg_id                                            # initialization
 
 with open("tmp.sh", "w") as f:
     f.write("rm -rf case_masks\n")
@@ -316,14 +333,15 @@ for timestamp in range(begin_time + 1, end_time):
     # DEBUG: check if the route definitions are correct
 
     folder_root = adding_astro_prefix(timestamp)
-    first_seg_id = trace_back_2_1st_timestamp(timestamp, begin_time, very_first_seg_id)    
 
-    if timestamp == 203:
-        print(f"first seg ID: {first_seg_id}")    
-        for target in target_tracks[203]:
-            print(f"Initial ID: {target.initial_id}\tprev Id: {target.prev_timestamp_segID}")
-            print(f"prev - next: {target_tracks[202][target.prev_timestamp_segID].next_timestamp_segID}")
+    seg_candidates = []
+    for target in target_tracks[timestamp]:
+        seg_candidates.append(target.tracker[0])
+    best_match_first_seg = search4best_match_in_first_segments(target_tracks[timestamp - 1][first_seg_id].tracker[0], seg_candidates)
+    first_seg_id = best_match_first_seg.id
+    # first_seg_id = trace_back_2_1st_timestamp(timestamp, begin_time, very_first_seg_id)    
 
+    
     with open("tmp.sh", "a+") as f:
         for i, target in enumerate(target_tracks[timestamp]):
             if int(target.initial_id) == first_seg_id and int(target.initial_time) == timestamp:
