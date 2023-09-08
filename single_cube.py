@@ -212,9 +212,9 @@ def search4best_match_in_first_segments(target_segment, seg_candidates):
 
 # root directory to the SAM output masks 
 # CV lab computer
-mask_root = "/home/joy0921/Desktop/2023S/Dataset/200_210/mask_outputs"    # magic
+# mask_root = "/home/joy0921/Desktop/2023S/Dataset/200_210/mask_outputs"    # magic
 # compute2.idsl
-# mask_root = "/home/joy0921/Desktop/Dataset/200_210/outputs/200"    # magic
+mask_root = "/home/joy0921/Desktop/Dataset/200_210/outputs_vit_l_200_210"    # magic
 
 
 # Get all the CSV files in the root directory and its subdirectories
