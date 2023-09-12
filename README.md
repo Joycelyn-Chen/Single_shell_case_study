@@ -15,11 +15,12 @@
 
 ## Generating tracking results
 1. `single_cube.py`
-- On compute2.idsl: Execute `python single_cube.py`
+- On compute2.idsl: Execute `python single_cube.py` to generate the `tmp.sh` file 
 
-2. Execute `tmp.sh`: to copy the correspning masks to the one folder
+2. Execute `tmp.sh`: to copy the corresponding masks to `case_masks/`
 
 3. Execute `track.py`: to combine the masks and the raw images to visualize the segmentation results.
+
 
 
 ---

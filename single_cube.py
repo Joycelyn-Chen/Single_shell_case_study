@@ -1,6 +1,7 @@
 import os
 import csv
 from collections import defaultdict
+from utils import *
 
 class track:
     def __init__(self, initial_time, initial_id):
@@ -208,13 +209,35 @@ def search4best_match_in_first_segments(target_segment, seg_candidates):
 
     return best_match
 
+def draw_area_graph(time, area, mean_dens, timestamp):
+    area = [val * ((1000/256) ** 2) for val in area]
+    fig, ax1 = plt.subplots()
+
+    # Plot the first line
+    ax1.plot(time, area, 'o-', label='Area', color='blue')
+    ax1.set_xlabel('Time stamp')
+    ax1.set_ylabel('Area (parsec squared)', color='black')
+
+    # Create the second subplot sharing the same x-axis
+    ax2 = ax1.twinx()
+
+    # Plot the second line
+    ax2.plot(time, mean_dens, 'o-', label='Mean Density', color='red')
+    ax2.set_ylabel('Mean Density', color='black')
+
+    # Add legend
+    lines = ax1.get_lines() + ax2.get_lines()
+    labels = [line.get_label() for line in lines]
+    ax1.legend(lines, labels, loc='center left')
+    plt.show()
+    # plt.savefig(os.path.join("graph", f"{timestamp}.png"))
 
 
 # root directory to the SAM output masks 
 # CV lab computer
-# mask_root = "/home/joy0921/Desktop/2023S/Dataset/200_210/mask_outputs"    # magic
+mask_root = "/home/joy0921/Desktop/2023S/Dataset/200_210/mask_outputs"    # magic
 # compute2.idsl
-mask_root = "/home/joy0921/Desktop/Dataset/200_210/outputs_vit_l_200_210"    # magic
+# mask_root = "/home/joy0921/Desktop/Dataset/200_210/outputs_vit_l_200_210"    # magic
 
 
 # Get all the CSV files in the root directory and its subdirectories
@@ -264,6 +287,13 @@ folder_root = adding_astro_prefix(begin_time)
 very_first_seg_id = 17                                                       # magic
 first_seg_id = very_first_seg_id                                            # initialization
 
+
+# Graphs making
+time_area = {i: [] for i in range(begin_time, end_time)}                # { 200: [(seg.slice_z, seg.id, seg.area), ()], 201: [] }
+
+
+
+
 with open("tmp.sh", "w") as f:
     f.write("rm -rf case_masks\n")
     f.write("mkdir case_masks\n")
@@ -274,7 +304,8 @@ with open("tmp.sh", "w") as f:
         if int(target.initial_id) == very_first_seg_id and int(target.initial_time) == begin_time:
             print("+---------Case study Result------------+")
             for j, seg in enumerate(target.tracker):
-                print(f"[{j}]  Time stamp: {begin_time} - {seg.slice_z}\tId: {seg.id}\tArea: {seg.area}")       
+                print(f"[{j}]  Time stamp: {begin_time} - {seg.slice_z}\tId: {seg.id}\tArea: {seg.area}")  
+                time_area[begin_time].append((seg.slice_z, seg.id, seg.area))     
                 f.write(f"cp {os.path.join(mask_root, str(begin_time), f'{folder_root}_z{seg.slice_z}', f'{seg.id}.png')} {os.path.join('case_masks', f'{folder_root}_z{seg.slice_z}.png')}\n")      
 print(f"+---------Done with t = {begin_time}------------+\n\n")
 
@@ -347,10 +378,30 @@ for timestamp in range(begin_time + 1, end_time):
             if int(target.initial_id) == first_seg_id and int(target.initial_time) == timestamp:
                 print("+---------Case study Result------------+")
                 for j, seg in enumerate(target.tracker):
-                    print(f"[{j}]  Time stamp: {timestamp} - {seg.slice_z}\tId: {seg.id}\tArea: {seg.area}")       
+                    print(f"[{j}]  Time stamp: {timestamp} - {seg.slice_z}\tId: {seg.id}\tArea: {seg.area}")     
+                    time_area[timestamp].append((seg.slice_z, seg.id, seg.area))  
                     f.write(f"cp {os.path.join(mask_root, str(timestamp),f'{folder_root}_z{seg.slice_z}', f'{seg.id}.png')} {os.path.join('case_masks', f'{folder_root}_z{seg.slice_z}.png')}\n")      
-    print(f"+---------Done with t = {timestamp}------------+\n\n")
+    
+        print(f"+---------Done with t = {timestamp}------------+\n\n")
 
-# 201:1, 
 
+# Drawing graphs
 
+image_root = "/home/joy0921/Desktop/2023S/Dataset/200_210/raw_imgs"
+
+for time in time_area:
+    mean_dens_list = []
+    x_axis = []
+    area_list = []
+    for slice in time_area[time]:
+        # filename = f'{adding_astro_prefix(time)}_z{slice[0]}.png'
+        folder_root = adding_astro_prefix(time)  
+
+        mean_dens_list.append(calculate_mean_with_mask(os.path.join(image_root, f"{folder_root}_z{slice[0]}.jpg"), os.path.join(mask_root, str(time),f'{folder_root}_z{slice[0]}', f'{slice[1]}.png'))) 
+        x_axis.append(slice[0])
+        area_list.append(slice[2])
+    print(x_axis)
+    print(area_list)
+    print(mean_dens_list)
+    # print(f"{len(x_axis)}\t{len(area_list)}\t{len(mean_dens_list)}")
+    # draw_area_graph(x_axis, area_list, mean_dens_list, time)
