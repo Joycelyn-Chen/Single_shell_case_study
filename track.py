@@ -16,15 +16,18 @@ def convert_binary_mask_to_red(mask_path):
 
     # Create a red mask by duplicating the grayscale mask into all 3 channels
     red_mask = np.zeros((mask.shape[0], mask.shape[1], 3), dtype=np.uint8)
+    red_mask[:, :, 1] = mask
     red_mask[:, :, 2] = mask
 
     return red_mask
 
-masks_folder = "./case_masks"
+# masks_folder = "./case_masks"
+masks_folder = "/home/joy0921/Desktop/2023S/Segmentation/XMem/workspace/output/masks"
 # CV lab server
-img_folder = "/home/joy0921/Desktop/2023S/Dataset/200_210/raw_imgs"
+# img_folder = "/home/joy0921/Desktop/2023S/Dataset/200_210/raw_imgs"
 # img_folder = "/home/joy0921/Desktop/Dataset/200_210/finer_time_200_210"
-track_folder = "./track_output"
+img_folder = "/home/joy0921/Desktop/2023S/Segmentation/XMem/workspace/output/images"
+track_folder = "/home/joy0921/Desktop/2023S/Segmentation/XMem/workspace/output/track_output"
 
 
 # read the masks
@@ -33,7 +36,7 @@ mask_files = extract_files(masks_folder)
 image_files = extract_files(img_folder)
 
 
-# read all the masks
+# read all the maskstrash:///rename.py
 for file in mask_files:
     red_mask = convert_binary_mask_to_red(file)
     for img in image_files:
@@ -42,7 +45,8 @@ for file in mask_files:
         # find the corresponding pair, cast the mask on the image
         if img_name == mask_name:
             origin_img = cv.imread(img)
-            combined_img = cv.addWeighted(origin_img, 1, red_mask, 0.4, 0)
+            red_mask = red_mask * 2
+            combined_img = cv.addWeighted(origin_img, 1, red_mask, 0.9, 0)
             
             # output the combined result to the folder
             filename = os.path.join(track_folder, f"{img_name}.png")
